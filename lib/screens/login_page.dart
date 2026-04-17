@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
 import 'home_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -12,18 +14,42 @@ class _LoginPageState extends State<LoginPage> {
   final password = TextEditingController();
   String errorText = "";
 
-  void validateLogin() {
-    setState(() {
-      if (email.text.isEmpty || password.text.isEmpty) {
-        errorText = "Please enter email & password";
-      } else {
-        errorText = "";
-        Navigator.push(
+  Future<void> validateLogin() async {
+    if (email.text.isEmpty || password.text.isEmpty) {
+      setState(() => errorText = "Please enter email & password");
+      return;
+    }
+
+    setState(() => errorText = "Logging in...");
+
+    try{
+      
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:3000/api/auth/login'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": email.text.trim(),
+          "password": password.text.trim(),
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+       if (response.statusCode == 200) {
+        setState(() => errorText = "");
+        
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => HomePage()),
         );
+
+      } else {
+        setState(() => errorText = data['error'] ?? "Login failed");
       }
-    });
+
+    } catch (e) {
+      setState(() => errorText = "Could not connect to server");
+    }
   }
 
   @override
