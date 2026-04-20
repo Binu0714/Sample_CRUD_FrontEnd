@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -148,16 +151,49 @@ class _HomePageState extends State<HomePage> {
           ),
           ElevatedButton(
             child: Text("Add"),
-            onPressed: () {
+            onPressed: () async {
               if (descController.text.isNotEmpty && selectedUser != null) {
-                setState(() {
-                  records.add({
-                    "id": records.length + 1,
-                    "desc": descController.text,
-                    "user": selectedUser,
-                  });
-                });
-                Navigator.pop(context);
+                
+                try {
+                  final prefs = await SharedPreferences.getInstance();
+                  final String? token = prefs.getString('token');
+
+                  final response = await http.post(
+                    Uri.parse('http://10.0.2.2:3000/api/items/add'),
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": "Bearer $token",
+                    },
+                    body: jsonEncode({
+                      "description": descController.text,
+                      "user_type": selectedUser,
+                    }),
+                  );
+
+                  if (response.statusCode == 201){
+                    final responseData = jsonDecode(response.body);
+                    final newItem = responseData['data'];
+
+                    setState(() {
+                      records.add({
+                        "id": newItem['id'], 
+                        "desc": newItem['description'],
+                        "user": newItem['user_type'],
+                      });
+                    });
+
+                    Navigator.pop(context);
+
+                  }else{
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Error: ${response.statusCode}")),
+                    );
+                  }
+
+                }catch (e) {
+                   print("Connection error: $e");
+                }
+
               }
             },
           ),
