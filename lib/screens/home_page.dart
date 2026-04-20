@@ -310,7 +310,7 @@ class _HomePageState extends State<HomePage> {
               }catch (e) {
                 print("Update error: $e");
               }
-              
+
             },
           ),
         ],
@@ -320,8 +320,49 @@ class _HomePageState extends State<HomePage> {
 
   // ---------------- Delete Record ---------------- //
   void _deleteRecord(int index) {
-    setState(() {
-      records.removeAt(index);
-    });
+    final int id = records[index]["id"];
+
+    showDialog(
+      context: context, 
+      builder: (context) => AlertDialog(
+        title: Text("confirm delete"),
+        content: Text("Are you sure you want to delete this record?"),
+        actions: [
+          TextButton(
+            child: Text("Cancel"),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text("Delete", style: TextStyle(color: Colors.white)),
+
+            onPressed: () async {
+              try{
+                final prefs = await SharedPreferences.getInstance();
+                final String? token = prefs.getString('token');
+
+                final response = await http.delete(
+                  Uri.parse('http://10.0.2.2:3000/api/items/delete/$id'),
+                  headers: {"Authorization": "Bearer $token"},
+                );
+
+                if (response.statusCode == 200) {
+                  setState(() {
+                    records.removeAt(index);
+                  });
+
+                  Navigator.pop(context); // Close dialog
+                }
+
+              }catch (e) {
+                print("Delete error: $e");
+              }
+            },
+          )
+        ],
+      )
+    );
+
+
   }
 }
