@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
             "user": item['user_type'],
           }).toList();
         }); 
-        
+
       } else {
         print("Failed to load: ${response.statusCode}");
       }
@@ -280,12 +280,37 @@ class _HomePageState extends State<HomePage> {
           ),
           ElevatedButton(
             child: Text("Update"),
-            onPressed: () {
-              setState(() {
-                records[index]["desc"] = descController.text;
-                records[index]["user"] = selectedUser;
-              });
-              Navigator.pop(context);
+            onPressed: () async {
+              
+              final int id = records[index]["id"];
+
+              try{
+                final prefs = await SharedPreferences.getInstance();
+                final String? token = prefs.getString('token');
+
+                final response = await http.put(
+                  Uri.parse('http://10.0.2.2:3000/api/items/update/$id'),
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer $token",
+                  },
+                  body: jsonEncode({
+                    "description": descController.text,
+                    "user_type": selectedUser,
+                  }),
+                );
+
+                if (response.statusCode == 200) {
+                  setState(() {
+                    records[index]["desc"] = descController.text;
+                    records[index]["user"] = selectedUser;
+                  });
+                  Navigator.pop(context);
+                }
+              }catch (e) {
+                print("Update error: $e");
+              }
+              
             },
           ),
         ],
