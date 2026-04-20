@@ -3,6 +3,7 @@ import 'signup_page.dart';
 import 'home_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -36,6 +37,9 @@ class _LoginPageState extends State<LoginPage> {
       final data = jsonDecode(response.body);
 
        if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', data['accessToken']);
+
         setState(() => errorText = "");
         
         Navigator.pushReplacement(
