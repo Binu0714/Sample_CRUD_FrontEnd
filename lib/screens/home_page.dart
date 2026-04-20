@@ -11,6 +11,45 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> records = [];
 
+  @override
+  void initState() {
+    super.initState();
+    fetchMyItems();
+  }
+
+  Future<void> fetchMyItems() async {
+    try{
+      final prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('token');
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:3000/api/items/my-items'), 
+        headers: {
+          "Authorization": "Bearer $token", 
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+        final List<dynamic> itemsList = responseBody['data']; 
+
+        setState(() {
+          records = itemsList.map((item) => {
+            "id": item['id'],
+            "desc": item['description'],
+            "user": item['user_type'],
+          }).toList();
+        }); 
+        
+      } else {
+        print("Failed to load: ${response.statusCode}");
+      }
+    }catch (e) {
+      print("Fetch Error: $e");
+    }
+  }
+
   final List<String> itUsers = [
     "IT User 01",
     "IT User 02",
